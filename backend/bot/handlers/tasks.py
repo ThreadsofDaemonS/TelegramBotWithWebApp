@@ -10,7 +10,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards import get_task_actions_keyboard
+from bot.keyboards import get_main_keyboard, get_task_actions_keyboard
 from database.models import Task, TaskPriority, TaskStatus, User
 
 router = Router()
@@ -91,6 +91,126 @@ async def cmd_my_tasks(message: Message, session: AsyncSession) -> None:
     except Exception as e:
         logger.error(f"Error in mytasks handler: {e}", exc_info=True)
         await message.answer("❌ Error fetching tasks. Please try again.")
+
+
+@router.message(F.text == "📋 Мои задачи")
+async def show_my_tasks(message: Message, session: AsyncSession) -> None:
+    """
+    Handle '📋 Мои задачи' button - show user's tasks summary.
+    
+    Args:
+        message: Telegram message
+        session: Database session
+    """
+    try:
+        user_telegram_id = message.from_user.id
+        
+        # Get user
+        result = await session.execute(
+            select(User).where(User.telegram_id == user_telegram_id)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            await message.answer("❌ Пользователь не найден. Используйте /start.")
+            return
+        
+        # Get task statistics
+        result = await session.execute(
+            select(
+                func.count(Task.id).label("total"),
+                func.sum(func.cast(Task.status == TaskStatus.TODO, type_=type(1))).label("todo"),
+                func.sum(func.cast(Task.status == TaskStatus.IN_PROGRESS, type_=type(1))).label("in_progress"),
+                func.sum(func.cast(Task.status == TaskStatus.DONE, type_=type(1))).label("done"),
+            ).where(Task.user_id == user.id)
+        )
+        stats = result.one()
+        
+        # Format response
+        response_text = "📋 Ваши задачи:\n\n"
+        response_text += f"⏳ К выполнению: {stats.todo or 0}\n"
+        response_text += f"🔵 В работе: {stats.in_progress or 0}\n"
+        response_text += f"✅ Завершено: {stats.done or 0}\n"
+        response_text += f"📝 Всего: {stats.total or 0}\n\n"
+        response_text += "Откройте приложение для подробностей 👇"
+        
+        await message.answer(
+            response_text,
+            reply_markup=get_main_keyboard()
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in show_my_tasks handler: {e}", exc_info=True)
+        await message.answer("❌ Ошибка при получении задач.")
+
+
+@router.message(F.text == "📊 Статистика")
+async def show_statistics(message: Message, session: AsyncSession) -> None:
+    """
+    Handle '📊 Статистика' button - show user statistics.
+    
+    Args:
+        message: Telegram message
+        session: Database session
+    """
+    try:
+        user_telegram_id = message.from_user.id
+        
+        # Get user
+        result = await session.execute(
+            select(User).where(User.telegram_id == user_telegram_id)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            await message.answer("❌ Пользователь не найден. Используйте /start.")
+            return
+        
+        # Get task statistics
+        result = await session.execute(
+            select(
+                func.count(Task.id).label("total"),
+                func.sum(func.cast(Task.status == TaskStatus.DONE, type_=type(1))).label("done"),
+            ).where(Task.user_id == user.id)
+        )
+        stats = result.one()
+        
+        # For now, just show basic stats
+        # TODO: Implement streak calculation based on task completion dates
+        response_text = "📊 Ваша статистика:\n\n"
+        response_text += f"🎯 Задач создано: {stats.total or 0}\n"
+        response_text += f"✅ Задач выполнено: {stats.done or 0}\n"
+        response_text += f"🔥 Серия дней: 0\n"
+        
+        await message.answer(
+            response_text,
+            reply_markup=get_main_keyboard()
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in show_statistics handler: {e}", exc_info=True)
+        await message.answer("❌ Ошибка при получении статистики.")
+
+
+@router.message(F.text == "ℹ️ Помощь")
+async def show_help(message: Message) -> None:
+    """
+    Handle 'ℹ️ Помощь' button - show help information.
+    
+    Args:
+        message: Telegram message
+    """
+    help_text = (
+        "ℹ️ Помощь по боту:\n\n"
+        "/start - Начать работу\n"
+        "/mytasks - Мои задачи\n"
+        "/addtask - Создать задачу\n\n"
+        "📱 Используйте Web App для полного функционала!"
+    )
+    await message.answer(
+        help_text,
+        reply_markup=get_main_keyboard()
+    )
 
 
 @router.message(Command("addtask"))

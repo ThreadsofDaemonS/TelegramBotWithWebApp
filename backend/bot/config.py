@@ -11,6 +11,7 @@ class BotConfig(BaseSettings):
     # Bot settings
     bot_token: str = os.getenv("BOT_TOKEN", "")
     webhook_url: str = os.getenv("WEBHOOK_URL", "")
+    webapp_url: str = os.getenv("WEBAPP_URL", "http://localhost")
     
     # Database settings
     database_url: str = os.getenv("DATABASE_URL", "postgresql+asyncpg://taskbot:changeme@localhost:5432/tasktracker")

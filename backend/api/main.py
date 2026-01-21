@@ -1,5 +1,6 @@
 """FastAPI main application."""
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 
@@ -62,7 +63,13 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(webhook.router)
+# Webhook only needed in production
+if os.getenv("USE_WEBHOOK", "false").lower() == "true":
+    app.include_router(webhook.router)
+    logger.info("Webhook router enabled")
+else:
+    logger.info("Webhook router disabled (using polling mode)")
+
 app.include_router(tasks.router)
 
 

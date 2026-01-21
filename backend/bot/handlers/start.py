@@ -7,7 +7,7 @@ from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards import get_webapp_keyboard
+from bot.keyboards import get_main_keyboard, get_webapp_keyboard
 from database.models import User
 
 router = Router()
@@ -52,18 +52,14 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
         
         # Send welcome message with Web App button
         welcome_text = (
-            f"👋 Welcome to Task Tracker, {message.from_user.first_name}!\n\n"
-            "📝 I'll help you manage your tasks efficiently.\n\n"
-            "Click the button below to open the Task Manager web app, "
-            "or use these commands:\n\n"
-            "/mytasks - View your tasks summary\n"
-            "/addtask - Quickly add a new task\n\n"
-            "Let's get organized! 🚀"
+            "👋 Добро пожаловать в Task Tracker!\n\n"
+            "📱 Используйте кнопку ниже для открытия приложения\n"
+            "или выберите действие из меню."
         )
         
         await message.answer(
             welcome_text,
-            reply_markup=get_webapp_keyboard(web_app_url)
+            reply_markup=get_main_keyboard()
         )
         
     except Exception as e:
