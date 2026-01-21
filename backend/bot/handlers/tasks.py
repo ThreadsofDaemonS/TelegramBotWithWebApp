@@ -128,6 +128,7 @@ async def show_my_tasks(message: Message, session: AsyncSession) -> None:
         
         # Format response
         response_text = "📋 Ваши задачи:\n\n"
+        response_text += f"⏳ К выполнению: {stats.todo or 0}\n"
         response_text += f"🔵 В работе: {stats.in_progress or 0}\n"
         response_text += f"✅ Завершено: {stats.done or 0}\n"
         response_text += f"📝 Всего: {stats.total or 0}\n\n"
@@ -175,6 +176,7 @@ async def show_statistics(message: Message, session: AsyncSession) -> None:
         stats = result.one()
         
         # For now, just show basic stats
+        # TODO: Implement streak calculation based on task completion dates
         response_text = "📊 Ваша статистика:\n\n"
         response_text += f"🎯 Задач создано: {stats.total or 0}\n"
         response_text += f"✅ Задач выполнено: {stats.done or 0}\n"
