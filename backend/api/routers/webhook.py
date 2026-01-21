@@ -1,4 +1,8 @@
-"""Webhook router for handling Telegram updates."""
+"""
+Webhook router - NOT USED in polling mode (local development)
+Only needed for production deployment with webhook
+"""
+# This router is disabled for local development
 import logging
 
 from aiogram import Bot, Dispatcher

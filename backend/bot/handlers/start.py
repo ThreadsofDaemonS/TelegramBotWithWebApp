@@ -7,7 +7,7 @@ from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards import get_webapp_keyboard
+from bot.keyboards import get_main_keyboard
 from database.models import User
 
 router = Router()
@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession) -> None:
     """
-    Handle /start command.
-    
-    Creates user in database if not exists and shows welcome message with Web App button.
+    Handle /start command - show welcome message with WebApp keyboard.
     
     Args:
         message: Telegram message
@@ -46,24 +44,22 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             await session.commit()
             logger.info(f"Created new user: {user_telegram_id}")
         
-        # Get Web App URL from environment or use default
-        import os
-        web_app_url = os.getenv("FRONTEND_URL", "http://localhost")
-        
-        # Send welcome message with Web App button
+        # Send welcome message with reply keyboard
         welcome_text = (
-            f"👋 Welcome to Task Tracker, {message.from_user.first_name}!\n\n"
-            "📝 I'll help you manage your tasks efficiently.\n\n"
-            "Click the button below to open the Task Manager web app, "
-            "or use these commands:\n\n"
-            "/mytasks - View your tasks summary\n"
-            "/addtask - Quickly add a new task\n\n"
-            "Let's get organized! 🚀"
+            f"👋 Привет, {message.from_user.first_name}!\n\n"
+            "🎯 <b>Task Tracker Mini App</b> - твой личный менеджер задач прямо в Telegram!\n\n"
+            "📱 <b>Нажми кнопку ниже</b> или кнопку 'Открыть' в меню, чтобы начать работу с задачами.\n\n"
+            "Также можешь использовать команды:\n"
+            "• /mytasks - посмотреть список задач\n"
+            "• /addtask - быстро создать задачу\n"
+            "• /stats - статистика\n"
+            "• /help - помощь"
         )
         
         await message.answer(
             welcome_text,
-            reply_markup=get_webapp_keyboard(web_app_url)
+            reply_markup=get_main_keyboard(),
+            parse_mode="HTML"
         )
         
     except Exception as e:

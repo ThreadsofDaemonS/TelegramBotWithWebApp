@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import config
-from api.routers import tasks, webhook
+from api.routers import tasks  # webhook disabled for polling mode
 from database import close_db, init_db
 
 # Configure logging
@@ -62,7 +62,7 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(webhook.router)
+# app.include_router(webhook.router)  # Disabled for polling mode (local development)
 app.include_router(tasks.router)
 
 

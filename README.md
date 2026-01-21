@@ -43,16 +43,108 @@ A comprehensive task management system built with Telegram Bot and Mini App inte
 ### Infrastructure
 - **Containerization**: Docker & Docker Compose
 - **Web Server**: Nginx as reverse proxy
-- **Webhook**: Direct webhook integration (no polling)
+- **Bot Mode**: Polling for local development, webhook support for production
 
 ## 📋 Prerequisites
 
 - Docker (version 20.10 or higher)
 - Docker Compose (version 2.0 or higher)
 - Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
-- Domain name with SSL certificate (for production)
+- (Optional) ngrok for local WebApp testing
+- (Production only) Domain name with SSL certificate
 
-## 🚀 Quick Start
+## 🏠 Local Development (Polling Mode)
+
+The project is configured for local development using **polling mode** instead of webhooks.
+
+### Quick Start
+
+1. **Clone the Repository**
+```bash
+git clone https://github.com/ThreadsofDaemonS/TelegramBotWithWebApp.git
+cd TelegramBotWithWebApp
+```
+
+2. **Configure Environment Variables**
+```bash
+cp .env.example .env
+```
+
+Edit `.env` file with your configuration:
+```env
+# Required: Get this from @BotFather
+BOT_TOKEN=your_bot_token_here
+
+# WebApp URL (use localhost for initial setup)
+WEBAPP_URL=http://localhost
+
+# Database credentials (you can keep defaults for development)
+POSTGRES_USER=taskbot
+POSTGRES_PASSWORD=changeme
+POSTGRES_DB=tasktracker
+```
+
+3. **Start the Services**
+```bash
+docker-compose up -d --build
+```
+
+This will start all services:
+- PostgreSQL database
+- Redis cache
+- Bot service (polling mode)
+- API service (FastAPI)
+- Frontend service (React)
+- Nginx reverse proxy
+
+4. **Run Database Migrations**
+```bash
+docker-compose exec api alembic upgrade head
+```
+
+5. **Test Your Bot**
+- Open Telegram and search for your bot
+- Send `/start` command
+- You'll see a welcome message with keyboard buttons!
+
+### Testing WebApp Locally
+
+Since Telegram WebApp requires HTTPS and public URL, use **ngrok** for testing:
+
+```bash
+# Install ngrok: https://ngrok.com
+
+# Run ngrok
+ngrok http 80
+
+# Copy the https URL (e.g., https://abc123.ngrok.io)
+# Update .env: WEBAPP_URL=https://abc123.ngrok.io
+
+# Restart bot
+docker-compose restart bot
+```
+
+Now the blue WebApp buttons will work!
+
+### WebApp Buttons
+
+The bot has **two ways** to open the WebApp:
+
+1. **Menu Button** - Blue "Открыть" button in chat header (configured automatically)
+2. **Keyboard Button** - "📱 Открыть Task Tracker" button at bottom of chat
+
+Both are configured automatically on bot startup.
+
+### Additional Keyboard Buttons
+
+The reply keyboard also includes quick action buttons:
+- **📋 Мои задачи** - View your tasks summary
+- **📊 Статистика** - See your task statistics
+- **ℹ️ Помощь** - Get help and command list
+
+## 🚀 Production Deployment (Webhook Mode)
+
+For production deployment with webhook:
 
 ### 1. Clone the Repository
 
@@ -67,39 +159,41 @@ cd TelegramBotWithWebApp
 cp .env.example .env
 ```
 
-Edit `.env` file with your configuration:
+Edit `.env` file with your production configuration:
 
 ```env
 # Required: Get this from @BotFather
 BOT_TOKEN=your_bot_token_here
 
-# Required: Your domain URL for webhook
-WEBHOOK_URL=https://yourdomain.com/webhook
+# Required: Your domain URL for WebApp
+WEBAPP_URL=https://yourdomain.com
 
-# Database credentials (you can keep defaults for development)
+# Database credentials
 POSTGRES_USER=taskbot
-POSTGRES_PASSWORD=changeme
+POSTGRES_PASSWORD=your_secure_password
 POSTGRES_DB=tasktracker
 
-# Optional: Frontend URL (used for CORS and web app button)
+# Frontend URL (used for CORS)
 FRONTEND_URL=https://yourdomain.com
 
-# Optional: Generate a secure secret key for production
-SECRET_KEY=your-secret-key-here
+# Generate a secure secret key for production
+SECRET_KEY=your-secure-secret-key-here
 ```
+
+**Note:** For production, you'll need to modify `backend/bot/main.py` to use webhook mode instead of polling, and uncomment the webhook router in `backend/api/main.py`.
 
 ### 3. Start the Services
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
 This will start all services:
 - PostgreSQL database
 - Redis cache
-- Bot service
-- API service
-- Frontend service
+- Bot service (polling mode for local, webhook for production)
+- API service (FastAPI)
+- Frontend service (React)
 - Nginx reverse proxy
 
 ### 4. Run Database Migrations
@@ -108,20 +202,52 @@ This will start all services:
 docker-compose exec api alembic upgrade head
 ```
 
-### 5. Set Up Webhook
-
-The webhook is automatically configured when the bot starts. To manually set it:
-
-```bash
-curl -X POST "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBHOOK_URL>"
-```
-
-### 6. Test Your Bot
+### 5. Open Your Bot
 
 1. Open Telegram and search for your bot
 2. Send `/start` command
-3. Click "Open Task Manager" to launch the web app
+3. Click "Open Task Manager" or use the Menu/Keyboard buttons to launch the web app
 4. Start creating and managing tasks!
+
+## 🔧 Development
+
+### Bot Commands
+
+- `/start` - Initialize bot and show welcome message with keyboard
+- `/mytasks` - View your tasks summary
+- `/addtask` - Quickly add a new task via bot
+- `/stats` - View your task statistics (alias: "📊 Статистика" button)
+- `/help` - Get help information (alias: "ℹ️ Помощь" button)
+
+### Local Development Without Docker
+
+#### Backend
+
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Set environment variables
+export DATABASE_URL="postgresql+asyncpg://taskbot:changeme@localhost:5432/tasktracker"
+export BOT_TOKEN="your_token"
+export WEBAPP_URL="http://localhost"
+
+# Run API
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run Bot (in another terminal)
+python -m bot.main
+```
+
+#### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ## 📁 Project Structure
 

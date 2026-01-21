@@ -22,6 +22,89 @@ class AddTaskStates(StatesGroup):
     waiting_for_title = State()
 
 
+@router.message(F.text == "📋 Мои задачи")
+async def show_my_tasks(message: Message, session: AsyncSession) -> None:
+    """
+    Handle "📋 Мои задачи" button - show user's tasks summary.
+    
+    Args:
+        message: Telegram message
+        session: Database session
+    """
+    # Reuse the /mytasks handler logic
+    await cmd_my_tasks(message, session)
+
+
+@router.message(F.text == "📊 Статистика")
+async def show_stats(message: Message, session: AsyncSession) -> None:
+    """
+    Handle "📊 Статистика" button - show user statistics.
+    
+    Args:
+        message: Telegram message
+        session: Database session
+    """
+    try:
+        user_telegram_id = message.from_user.id
+        
+        # Get user
+        result = await session.execute(
+            select(User).where(User.telegram_id == user_telegram_id)
+        )
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            await message.answer("❌ User not found. Please use /start first.")
+            return
+        
+        # Get task statistics
+        result = await session.execute(
+            select(
+                func.count(Task.id).label("total"),
+                func.sum(func.cast(Task.status == TaskStatus.TODO, type_=type(1))).label("todo"),
+                func.sum(func.cast(Task.status == TaskStatus.IN_PROGRESS, type_=type(1))).label("in_progress"),
+                func.sum(func.cast(Task.status == TaskStatus.DONE, type_=type(1))).label("done"),
+            ).where(Task.user_id == user.id)
+        )
+        stats = result.one()
+        
+        await message.answer(
+            "📊 <b>Статистика:</b>\n\n"
+            f"📝 Всего задач: {stats.total or 0}\n"
+            f"⏳ К выполнению: {stats.todo or 0}\n"
+            f"🔄 В работе: {stats.in_progress or 0}\n"
+            f"✅ Выполнено: {stats.done or 0}\n\n"
+            "Откройте WebApp для подробной аналитики!",
+            parse_mode="HTML"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in stats handler: {e}", exc_info=True)
+        await message.answer("❌ Error fetching statistics. Please try again.")
+
+
+@router.message(F.text == "ℹ️ Помощь")
+async def show_help(message: Message) -> None:
+    """
+    Handle "ℹ️ Помощь" button - show help information.
+    
+    Args:
+        message: Telegram message
+    """
+    await message.answer(
+        "ℹ️ <b>Помощь:</b>\n\n"
+        "🔹 Используйте кнопки ниже для быстрого доступа\n"
+        "🔹 Нажмите '📱 Открыть Task Tracker' для WebApp\n"
+        "🔹 Или кнопку 'Открыть' в меню бота\n\n"
+        "<b>Команды:</b>\n"
+        "/start - начать работу\n"
+        "/mytasks - список задач\n"
+        "/addtask - создать задачу\n"
+        "/stats - статистика",
+        parse_mode="HTML"
+    )
+
+
 @router.message(Command("mytasks"))
 async def cmd_my_tasks(message: Message, session: AsyncSession) -> None:
     """

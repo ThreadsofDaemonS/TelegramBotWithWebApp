@@ -6,6 +6,7 @@ import sys
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.types import MenuButtonWebApp, WebAppInfo
 
 from bot.config import config
 from bot.handlers import start, tasks
@@ -46,27 +47,32 @@ async def main() -> None:
         logger.error(f"Failed to initialize database: {e}")
         sys.exit(1)
     
-    # Set webhook
-    if config.webhook_url:
-        try:
-            await bot.delete_webhook(drop_pending_updates=True)
-            await bot.set_webhook(
-                url=config.webhook_url,
-                allowed_updates=dp.resolve_used_update_types(),
-                drop_pending_updates=True
-            )
-            logger.info(f"Webhook set to: {config.webhook_url}")
-        except Exception as e:
-            logger.error(f"Failed to set webhook: {e}")
-            sys.exit(1)
-    else:
-        logger.warning("WEBHOOK_URL not set, bot will not receive updates")
-    
-    # Keep bot running
-    logger.info("Bot started successfully")
+    # Set Menu Button (blue "Open" button in chat header)
     try:
-        # Keep alive - webhook mode doesn't need polling
-        await asyncio.Event().wait()
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(
+                text="Открыть",
+                web_app=WebAppInfo(url=config.webapp_url)
+            )
+        )
+        logger.info("✅ Menu Button configured")
+    except Exception as e:
+        logger.error(f"❌ Failed to set Menu Button: {e}")
+    
+    # Delete webhook and start polling (for local development)
+    await bot.delete_webhook(drop_pending_updates=True)
+    
+    logger.info("🤖 Bot started in POLLING mode (local development)")
+    logger.info(f"Bot username: {(await bot.get_me()).username}")
+    logger.info(f"WebApp URL: {config.webapp_url}")
+    
+    # Start polling
+    try:
+        await dp.start_polling(
+            bot,
+            allowed_updates=dp.resolve_used_update_types(),
+            drop_pending_updates=True
+        )
     except (KeyboardInterrupt, SystemExit):
         logger.info("Bot stopping...")
     finally:
