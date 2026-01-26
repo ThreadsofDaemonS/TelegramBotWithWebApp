@@ -191,7 +191,7 @@ async def show_statistics(message: Message, session: AsyncSession) -> None:
         logger.error(f"Error in show_statistics handler: {e}", exc_info=True)
         await message.answer("❌ Ошибка при получении статистики.")
 
-
+@router.message(Command("help"))
 @router.message(F.text == "ℹ️ Помощь")
 async def show_help(message: Message) -> None:
     """
