@@ -3,7 +3,7 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, select, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth import get_current_user
@@ -246,12 +246,12 @@ async def get_task_stats(
         result = await session.execute(
             select(
                 func.count(Task.id).label("total"),
-                func.sum(func.cast(Task.status == TaskStatus.TODO, type_=type(1))).label("todo"),
-                func.sum(func.cast(Task.status == TaskStatus.IN_PROGRESS, type_=type(1))).label("in_progress"),
-                func.sum(func.cast(Task.status == TaskStatus.DONE, type_=type(1))).label("done"),
-                func.sum(func.cast(Task.priority == TaskPriority.HIGH, type_=type(1))).label("high_priority"),
-                func.sum(func.cast(Task.priority == TaskPriority.MEDIUM, type_=type(1))).label("medium_priority"),
-                func.sum(func.cast(Task.priority == TaskPriority.LOW, type_=type(1))).label("low_priority"),
+                func.sum(case((Task.status == TaskStatus.TODO, 1), else_=0)).label("todo"),
+                func.sum(case((Task.status == TaskStatus.IN_PROGRESS, 1), else_=0)).label("in_progress"),
+                func.sum(case((Task.status == TaskStatus.DONE, 1), else_=0)).label("done"),
+                func.sum(case((Task.priority == TaskPriority.HIGH, 1), else_=0)).label("high_priority"),
+                func.sum(case((Task.priority == TaskPriority.MEDIUM, 1), else_=0)).label("medium_priority"),
+                func.sum(case((Task.priority == TaskPriority.LOW, 1), else_=0)).label("low_priority"),
             ).where(Task.user_id == user.id)
         )
         stats = result.one()

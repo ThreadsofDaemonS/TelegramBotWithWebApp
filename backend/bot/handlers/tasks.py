@@ -7,7 +7,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
-from sqlalchemy import func, select
+from sqlalchemy import func, select, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards import get_main_keyboard, get_task_actions_keyboard
@@ -48,9 +48,9 @@ async def cmd_my_tasks(message: Message, session: AsyncSession) -> None:
         result = await session.execute(
             select(
                 func.count(Task.id).label("total"),
-                func.sum(func.cast(Task.status == TaskStatus.TODO, type_=type(1))).label("todo"),
-                func.sum(func.cast(Task.status == TaskStatus.IN_PROGRESS, type_=type(1))).label("in_progress"),
-                func.sum(func.cast(Task.status == TaskStatus.DONE, type_=type(1))).label("done"),
+                func.sum(case((Task.status == TaskStatus.TODO, 1), else_=0)).label("todo"),
+                func.sum(case((Task.status == TaskStatus.IN_PROGRESS, 1), else_=0)).label("in_progress"),
+                func.sum(case((Task.status == TaskStatus.DONE, 1), else_=0)).label("done"),
             ).where(Task.user_id == user.id)
         )
         stats = result.one()
@@ -119,9 +119,9 @@ async def show_my_tasks(message: Message, session: AsyncSession) -> None:
         result = await session.execute(
             select(
                 func.count(Task.id).label("total"),
-                func.sum(func.cast(Task.status == TaskStatus.TODO, type_=type(1))).label("todo"),
-                func.sum(func.cast(Task.status == TaskStatus.IN_PROGRESS, type_=type(1))).label("in_progress"),
-                func.sum(func.cast(Task.status == TaskStatus.DONE, type_=type(1))).label("done"),
+                func.sum(case((Task.status == TaskStatus.TODO, 1), else_=0)).label("todo"),
+                func.sum(case((Task.status == TaskStatus.IN_PROGRESS, 1), else_=0)).label("in_progress"),
+                func.sum(case((Task.status == TaskStatus.DONE, 1), else_=0)).label("done"),
             ).where(Task.user_id == user.id)
         )
         stats = result.one()
@@ -170,7 +170,7 @@ async def show_statistics(message: Message, session: AsyncSession) -> None:
         result = await session.execute(
             select(
                 func.count(Task.id).label("total"),
-                func.sum(func.cast(Task.status == TaskStatus.DONE, type_=type(1))).label("done"),
+                func.sum(case((Task.status == TaskStatus.DONE, 1), else_=0)).label("done"),
             ).where(Task.user_id == user.id)
         )
         stats = result.one()
