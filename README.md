@@ -98,8 +98,8 @@ POSTGRES_DB=tasktracker
 **For Telegram WebApp to work, also create `frontend/.env`:**
 
 ```bash
-# Create frontend/.env
-echo "VITE_API_URL=http://localhost:8000" > frontend/.env
+# Create frontend/.env from example
+cp frontend/.env.example frontend/.env
 ```
 
 This tells the frontend where to send API requests. When using ngrok, update this to your ngrok URL.
