@@ -95,6 +95,15 @@ POSTGRES_DB=tasktracker
 # Leave other settings as default
 ```
 
+**For Telegram WebApp to work, also create `frontend/.env`:**
+
+```bash
+# Create frontend/.env
+echo "VITE_API_URL=http://localhost:8000" > frontend/.env
+```
+
+This tells the frontend where to send API requests. When using ngrok, update this to your ngrok URL.
+
 ### 4. Start the Services
 
 ```bash
@@ -132,13 +141,26 @@ Since Telegram WebApp requires HTTPS, use ngrok for local testing:
 # Start ngrok in a separate terminal
 ngrok http 80
 
-# Copy the HTTPS URL (e.g., https://abc123.ngrok.io)
+# Copy the HTTPS URL (e.g., https://abc123.ngrok-free.app)
 # Update .env:
-WEBAPP_URL=https://abc123.ngrok.io
+WEBAPP_URL=https://abc123.ngrok-free.app
+FRONTEND_URL=https://abc123.ngrok-free.app
 
-# Restart bot to apply new URL
-docker-compose restart bot
+# IMPORTANT: Also update frontend/.env:
+VITE_API_URL=https://abc123.ngrok-free.app
+
+# Rebuild frontend to apply new configuration
+docker-compose build --no-cache frontend
+
+# Restart services to apply new URLs
+docker-compose up -d
 ```
+
+**Important Notes:**
+- All three URL variables must point to your ngrok URL: `WEBAPP_URL`, `FRONTEND_URL`, and `VITE_API_URL`
+- The frontend needs `VITE_API_URL` to know where to send API requests
+- Free ngrok URLs change on restart - consider a paid plan for a static domain
+- After changing ngrok URL, you must rebuild the frontend container
 
 Now the WebApp button will work! 🎉
 
@@ -288,6 +310,67 @@ docker-compose logs -f bot
 docker-compose logs -f api
 docker-compose logs -f frontend
 ```
+
+## 🔧 Troubleshooting
+
+### WebApp shows "Failed to load tasks"
+
+This usually happens when the frontend is trying to connect to the wrong API URL.
+
+**Check the following:**
+
+1. **Verify environment variables are set correctly:**
+   ```bash
+   # In .env file:
+   WEBAPP_URL=https://your-ngrok-url.ngrok-free.app
+   FRONTEND_URL=https://your-ngrok-url.ngrok-free.app
+   
+   # In frontend/.env file:
+   VITE_API_URL=https://your-ngrok-url.ngrok-free.app
+   ```
+   All three URLs should be identical (your ngrok HTTPS URL).
+
+2. **Check browser console for errors:**
+   - Open the WebApp in Telegram
+   - Open Telegram Desktop → Right click → Inspect Element → Console
+   - Look for error messages with `[API Service]` or `[App]` prefix
+   - Check what URL the frontend is connecting to
+
+3. **Common issues:**
+   - **401 Unauthorized**: Frontend connecting to wrong URL or missing initData
+     - Solution: Verify `VITE_API_URL` is set correctly and rebuild frontend
+   - **Mixed content warnings**: HTTPS site connecting to HTTP localhost
+     - Solution: Use ngrok URL for all environment variables
+   - **CORS errors**: Browser blocking requests
+     - Solution: Ensure `FRONTEND_URL` matches the URL Telegram is using
+
+4. **After changing environment variables:**
+   ```bash
+   # Must rebuild frontend to pick up new VITE_API_URL
+   docker-compose build --no-cache frontend
+   docker-compose up -d
+   ```
+
+5. **Verify initData is present:**
+   - Check console for `[App] Telegram WebApp Debug Info`
+   - initData should not be empty
+   - If empty, you may be opening the app directly in browser instead of through Telegram
+
+### WebApp works in browser but not in Telegram
+
+- The WebApp must be opened from within Telegram to have valid `initData`
+- Direct browser access will fail with 401 Unauthorized
+- Always test by clicking the WebApp button in your Telegram bot
+
+### ngrok URL changed and WebApp stopped working
+
+Free ngrok URLs change every time you restart ngrok. You need to:
+
+1. Update all three URLs in `.env` and `frontend/.env`
+2. Rebuild frontend: `docker-compose build --no-cache frontend`
+3. Restart services: `docker-compose up -d`
+
+Consider using ngrok's paid plan for a static domain.
 
 ## 📊 Database Schema
 

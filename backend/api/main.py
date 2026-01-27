@@ -56,7 +56,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[config.frontend_url, "*"],  # Allow frontend and wildcard for development
+    allow_origins=[config.frontend_url] if config.frontend_url else ["*"],  # Don't mix wildcard with credentials
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

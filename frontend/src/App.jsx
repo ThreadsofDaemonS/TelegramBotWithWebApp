@@ -17,6 +17,15 @@ function App() {
   // Initialize Telegram Web App
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
+    
+    console.log('[App] Telegram WebApp Debug Info:');
+    console.log('  - WebApp available:', !!tg);
+    console.log('  - initData:', tg?.initData || '(empty)');
+    console.log('  - initDataUnsafe:', tg?.initDataUnsafe);
+    console.log('  - version:', tg?.version);
+    console.log('  - platform:', tg?.platform);
+    console.log('  - colorScheme:', tg?.colorScheme);
+    
     if (tg) {
       tg.ready();
       tg.expand();
@@ -24,6 +33,11 @@ function App() {
       // Set theme colors
       document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
       document.body.style.color = tg.themeParams.text_color || '#000000';
+      
+      console.log('[App] ✓ Telegram WebApp initialized successfully');
+    } else {
+      console.warn('[App] ⚠️ Not running inside Telegram WebApp!');
+      console.warn('[App] The app should be opened from Telegram bot.');
     }
   }, []);
 
@@ -33,6 +47,8 @@ function App() {
       setLoading(true);
       setError(null);
       
+      console.log('[App] Fetching tasks and stats...');
+      
       const [tasksResponse, statsResponse] = await Promise.all([
         tasksAPI.getTasks(),
         tasksAPI.getStats(),
@@ -40,14 +56,31 @@ function App() {
       
       setTasks(tasksResponse.data);
       setStats(statsResponse.data);
+      
+      console.log('[App] ✓ Data loaded successfully:', {
+        tasksCount: tasksResponse.data.length,
+        stats: statsResponse.data
+      });
     } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load tasks. Please try again.');
+      console.error('[App] ✗ Error fetching data:', err);
+      
+      // Create detailed error message
+      let errorMessage = 'Failed to load tasks. ';
+      
+      if (err.response?.status === 401) {
+        errorMessage += 'Authentication failed. Make sure you opened the app from Telegram.';
+      } else if (err.request && !err.response) {
+        errorMessage += 'Cannot connect to server. Check your internet connection and API URL configuration.';
+      } else {
+        errorMessage += 'Please try again.';
+      }
+      
+      setError(errorMessage);
       
       // Show error in Telegram
       const tg = window.Telegram?.WebApp;
       if (tg) {
-        tg.showAlert('Failed to load tasks. Please try again.');
+        tg.showAlert(errorMessage);
       }
     } finally {
       setLoading(false);
