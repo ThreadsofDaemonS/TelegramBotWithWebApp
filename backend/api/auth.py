@@ -5,13 +5,11 @@ import logging
 from typing import Optional
 from urllib.parse import parse_qs
 
-from fastapi import HTTPException, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import HTTPException, Header
 
 from api.config import config
 
 logger = logging.getLogger(__name__)
-security = HTTPBearer()
 
 
 def validate_telegram_web_app_data(init_data: str) -> dict:
@@ -80,13 +78,13 @@ def validate_telegram_web_app_data(init_data: str) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Security(security)
+    authorization: Optional[str] = Header(None)
 ) -> dict:
     """
     Dependency to get current user from Telegram Web App initData.
     
     Args:
-        credentials: Authorization credentials
+        authorization: Authorization header containing initData
         
     Returns:
         dict: User data
@@ -94,11 +92,11 @@ async def get_current_user(
     Raises:
         HTTPException: If authentication fails
     """
-    if not credentials:
-        raise HTTPException(status_code=401, detail="Missing authorization")
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
     
-    # The token should be the initData
-    init_data = credentials.credentials
+    # The authorization header should contain the raw initData
+    init_data = authorization
     user_data = validate_telegram_web_app_data(init_data)
     
     if not user_data:

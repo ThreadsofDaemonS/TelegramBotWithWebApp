@@ -19,7 +19,8 @@ api.interceptors.request.use(
   (config) => {
     // Get initData from Telegram Web App
     if (window.Telegram?.WebApp?.initData) {
-      config.headers.Authorization = `Bearer ${window.Telegram.WebApp.initData}`;
+      // Send initData directly in Authorization header without "Bearer " prefix
+      config.headers.Authorization = window.Telegram.WebApp.initData;
     }
     return config;
   },
