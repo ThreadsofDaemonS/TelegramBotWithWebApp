@@ -137,7 +137,7 @@ To open the Task Tracker Web App:
 2. **Click the blue "Открыть" (Open) button** to the left of the message input field (Menu Button)
 3. The Web App will open with proper authentication
 
-**Important:** Use the Menu Button (blue button near input field) instead of keyboard buttons to ensure proper Telegram authentication data is passed. This prevents authentication errors when using the Web App.
+**Important:** Use the Menu Button (blue button to the left of the message input field) instead of keyboard buttons to ensure proper Telegram authentication data is passed. This prevents authentication errors when using the Web App.
 
 ### 8. Testing WebApp Locally with ngrok
 
