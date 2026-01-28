@@ -1,24 +1,16 @@
 """Reply keyboards for the bot."""
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo
-
-from bot.config import config
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
     """
-    Create main reply keyboard with WebApp button.
+    Create main reply keyboard with action buttons.
     
     Returns:
         ReplyKeyboardMarkup with action buttons
     """
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [
-                KeyboardButton(
-                    text="📱 Открыть Task Tracker",
-                    web_app=WebAppInfo(url=config.webapp_url)
-                )
-            ],
             [KeyboardButton(text="📋 Мои задачи")],
             [
                 KeyboardButton(text="📊 Статистика"),

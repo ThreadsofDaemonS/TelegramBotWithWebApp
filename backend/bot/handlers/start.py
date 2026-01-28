@@ -7,7 +7,7 @@ from aiogram.types import Message
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from bot.keyboards import get_main_keyboard, get_webapp_keyboard
+from bot.keyboards import get_main_keyboard
 from database.models import User
 
 router = Router()
@@ -19,7 +19,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
     """
     Handle /start command.
     
-    Creates user in database if not exists and shows welcome message with Web App button.
+    Creates user in database if not exists and shows welcome message with reply keyboard.
     
     Args:
         message: Telegram message
@@ -46,15 +46,12 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
             await session.commit()
             logger.info(f"Created new user: {user_telegram_id}")
         
-        # Get Web App URL from environment or use default
-        import os
-        web_app_url = os.getenv("FRONTEND_URL", "http://localhost")
-        
-        # Send welcome message with Web App button
+        # Send welcome message with instructions to use Menu Button
         welcome_text = (
             "👋 Добро пожаловать в Task Tracker!\n\n"
-            "📱 Используйте кнопку ниже для открытия приложения\n"
-            "или выберите действие из меню."
+            "📱 Нажмите кнопку «Открыть» слева от поля ввода\n"
+            "для запуска приложения\n\n"
+            "Или выберите действие из меню ниже:"
         )
         
         await message.answer(
